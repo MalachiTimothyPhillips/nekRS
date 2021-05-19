@@ -28,6 +28,13 @@ void ciSetup(MPI_Comm comm, setupAide &options)
   if(ciMode == 2){
     options.setArgs("SUBCYCLING STEPS", string("1"));
   }
+  if(ciMode == 3){
+    options.setArgs("SUBCYCLING STEPS", string("1"));
+    options.setArgs("MESH SOLVER", "ELASTICITY");
+    options.setArgs("MESH RESIDUAL PROJECTION", "TRUE");
+    options.setArgs("MESH RESIDUAL PROJECTION VECTORS", "8");
+    options.setArgs("MESH SOLVER TOLERANCE", "1e-6");
+  }
 }
 
 void ciTestErrors(nrs_t *nrs, dfloat time, int tstep)
@@ -35,6 +42,7 @@ void ciTestErrors(nrs_t *nrs, dfloat time, int tstep)
   if (!nrs->lastStep) return;
  
   const int rank = platform->comm.mpiRank;
+  mesh_t* mesh = nrs->meshV;
  
   nek::ocopyToNek(time, tstep);
   nek::userchk();
@@ -43,6 +51,7 @@ void ciTestErrors(nrs_t *nrs, dfloat time, int tstep)
   const int Nfields = 6;
   dfloat expectedErr[Nfields];
   int expectedPIter;
+  int expectedVIter = 3;
   if(ciMode == 1)
   {
     expectedErr[0] = 0.2465620E-06;
@@ -61,11 +70,22 @@ void ciTestErrors(nrs_t *nrs, dfloat time, int tstep)
     expectedErr[3] = 0.2144404E-05;
     expectedErr[4] = 0.2465620E-05;
     expectedErr[5] = 0.2443839E-05;
-    expectedPIter = 6;
+    expectedPIter = 7;
+  }
+  if(ciMode == 3)
+  {
+    expectedErr[0] = 0.2465620E-06;
+    expectedErr[1] = 0.6938894E-16;
+    expectedErr[2] = 0.3044039E-05;
+    expectedErr[3] = 0.3045601E-05;
+    expectedErr[4] = 0.2465620E-05;
+    expectedErr[5] = 0.2443839E-05;
+
+    expectedPIter = 7;
+    expectedVIter = 6;
   }
 
   const dfloat floor = 1e-12; // values below this threshold are ignored
-  const int expectedVIter = 3;
 
   double vxErr, prErr;
   double s1Err;
